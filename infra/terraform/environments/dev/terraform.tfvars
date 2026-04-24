@@ -19,3 +19,5 @@ sql_server_name    = "sql-burgerbuilder-group7"
 sql_database_name  = "burgerbuilderdbgroup7"
 sql_admin_username = "sqladmingroup7"
 sql_admin_password = "Group7-Group7"
+
+alert_email = "fidailveliyev09@gmail.com"

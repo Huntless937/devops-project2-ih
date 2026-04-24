@@ -9,3 +9,7 @@ output "sql_database_name" {
 output "private_endpoint_ip" {
   value = azurerm_private_endpoint.sql.private_service_connection[0].private_ip_address
 }
+
+output "sql_database_id" {
+  value = azurerm_mssql_database.main.id
+}

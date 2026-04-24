@@ -68,3 +68,14 @@ module "appgateway" {
   frontend_private_ip = module.compute.frontend_private_ip
   backend_private_ip  = module.compute.backend_private_ip
 }
+
+module "monitoring" {
+  source              = "../../modules/monitoring"
+  resource_group_name = azurerm_resource_group.main.name
+  location            = azurerm_resource_group.main.location
+  alert_email         = var.alert_email
+  appgw_id            = module.appgateway.appgw_id
+  frontend_vm_id      = module.compute.frontend_vm_id
+  backend_vm_id       = module.compute.backend_vm_id
+  sql_database_id     = module.database.sql_database_id
+}
