@@ -1,0 +1,18 @@
+---
+- name: Configure all VMs with common setup
+  hosts: all
+  become: true
+  roles:
+    - common
+
+- name: Configure frontend VM
+  hosts: frontend
+  become: true
+  roles:
+    - frontend
+
+- name: Configure backend VM
+  hosts: backend
+  become: true
+  roles:
+    - backend

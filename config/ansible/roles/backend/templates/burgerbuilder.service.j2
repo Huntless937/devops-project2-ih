@@ -1,0 +1,14 @@
+[Unit]
+Description=Burger Builder Backend
+After=network.target
+
+[Service]
+User=azureuser
+WorkingDirectory=/opt/burgerbuilder
+ExecStart=/usr/bin/java -jar /opt/burgerbuilder/app.jar
+EnvironmentFile=/opt/burgerbuilder/.env
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

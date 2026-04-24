@@ -1,0 +1,35 @@
+---
+- name: Install Nginx
+  apt:
+    name: nginx
+    state: present
+
+- name: Copy Nginx config
+  template:
+    src: nginx.conf.j2
+    dest: /etc/nginx/sites-available/default
+    owner: root
+    group: root
+    mode: '0644'
+  notify: restart nginx
+
+- name: Create web root directory
+  file:
+    path: /var/www/html
+    state: directory
+    owner: www-data
+    group: www-data
+    mode: '0755'
+
+- name: Copy frontend build files
+  copy:
+    src: "{{ frontend_build_path }}"
+    dest: /var/www/html/
+    owner: www-data
+    group: www-data
+
+- name: Enable Nginx service
+  systemd:
+    name: nginx
+    enabled: yes
+    state: started

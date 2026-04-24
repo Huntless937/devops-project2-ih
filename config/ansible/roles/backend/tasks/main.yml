@@ -1,0 +1,37 @@
+---
+- name: Install Java 21
+  apt:
+    name: openjdk-21-jdk
+    state: present
+
+- name: Create app directory
+  file:
+    path: /opt/burgerbuilder
+    state: directory
+    owner: azureuser
+    group: azureuser
+    mode: '0755'
+
+- name: Copy backend JAR
+  copy:
+    src: "{{ backend_jar_path }}"
+    dest: /opt/burgerbuilder/app.jar
+    owner: azureuser
+    group: azureuser
+    mode: '0644'
+
+- name: Copy systemd service file
+  template:
+    src: burgerbuilder.service.j2
+    dest: /etc/systemd/system/burgerbuilder.service
+    owner: root
+    group: root
+    mode: '0644'
+  notify: restart burgerbuilder
+
+- name: Enable and start backend service
+  systemd:
+    name: burgerbuilder
+    enabled: yes
+    state: started
+    daemon_reload: yes
