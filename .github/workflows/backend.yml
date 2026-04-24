@@ -1,0 +1,48 @@
+name: Backend CI/CD
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/**'
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    name: Build and Deploy Backend
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Java 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Run tests
+        working-directory: backend
+        run: mvn test
+
+      - name: Build JAR
+        working-directory: backend
+        run: mvn clean package -DskipTests
+
+      - name: Upload JAR artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-jar
+          path: backend/target/*.jar
+
+      - name: Deploy to backend VM via Ansible
+        uses: dawidd6/action-ansible-playbook@v2
+        with:
+          playbook: config/ansible/site.yml
+          inventory: config/ansible/inventories/dev/hosts.yml
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          options: |
+            --limit backend
+            --extra-vars "backend_jar_path=backend/target/burger-builder-backend-1.0.0.jar"
