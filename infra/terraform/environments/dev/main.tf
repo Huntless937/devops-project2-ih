@@ -59,3 +59,12 @@ module "database" {
   data_subnet_id      = module.network.subnet_ids["data"]
   vnet_id             = module.network.vnet_id
 }
+
+module "appgateway" {
+  source              = "../../modules/appgateway"
+  resource_group_name = azurerm_resource_group.main.name
+  location            = azurerm_resource_group.main.location
+  appgw_subnet_id     = module.network.subnet_ids["appgw"]
+  frontend_private_ip = module.compute.frontend_private_ip
+  backend_private_ip  = module.compute.backend_private_ip
+}
