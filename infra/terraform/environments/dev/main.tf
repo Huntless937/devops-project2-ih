@@ -47,3 +47,15 @@ module "compute" {
   ssh_public_key      = var.ssh_public_key
   vm_size             = var.vm_size
 }
+
+module "database" {
+  source              = "../../modules/database"
+  resource_group_name = azurerm_resource_group.main.name
+  location            = azurerm_resource_group.main.location
+  sql_server_name     = var.sql_server_name
+  sql_database_name   = var.sql_database_name
+  sql_admin_username  = var.sql_admin_username
+  sql_admin_password  = var.sql_admin_password
+  data_subnet_id      = module.network.subnet_ids["data"]
+  vnet_id             = module.network.vnet_id
+}

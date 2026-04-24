@@ -31,3 +31,11 @@ variable "vm_size" {
   type    = string
   default = "Standard_B2s"
 }
+
+variable "sql_server_name"    { type = string }
+variable "sql_database_name"  { type = string }
+variable "sql_admin_username" { type = string }
+variable "sql_admin_password" {
+  type      = string
+  sensitive = true
+}
