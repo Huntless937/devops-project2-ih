@@ -61,5 +61,5 @@ jobs:
             -i config/ansible/inventories/dev/hosts.yml \
             --limit frontend \
             --private-key ~/.ssh/burgerbuilder \
-            --extra-vars "frontend_build_path=frontend/dist/" \
+            --extra-vars "frontend_build_path=${{ github.workspace }}/frontend/dist/" \
             -u azureuser
