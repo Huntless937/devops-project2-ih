@@ -132,6 +132,7 @@ resource "azurerm_application_gateway" "main" {
       paths                      = ["/api/*"]
       backend_address_pool_name  = "pool-backend"
       backend_http_settings_name = "http-settings-backend"
+      rewrite_rule_set_name      = "rewrite-api-path"
     }
   }
 
@@ -141,5 +142,24 @@ resource "azurerm_application_gateway" "main" {
     http_listener_name = "listener-http"
     url_path_map_name  = "url-path-map"
     priority           = 100
+  }
+  rewrite_rule_set {
+    name = "rewrite-api-path"
+
+    rewrite_rule {
+      name          = "keep-api-prefix"
+      rule_sequence = 100
+
+      condition {
+        variable    = "var_uri_path"
+        pattern     = "/api/(.*)"
+        ignore_case = true
+      }
+
+      url {
+        path         = "/api/{var_uri_path_1}"
+        reroute      = false
+      }
+    }
   }
 }
