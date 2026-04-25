@@ -1,286 +1,354 @@
-# Burger Builder Application
+# 🍔 Burger Builder — Production 3-Tier Azure Architecture
 
-A full-stack web application for building and ordering custom burgers with a modern React frontend and Spring Boot backend API.
+A full-stack web application deployed on a secure, scalable 3-tier Azure architecture with full automation via Terraform, Ansible, and GitHub Actions.
 
-## Project Structure
+## 🏗️ Architecture Overview
 
 ```
-capstone_project_ih/
-├── frontend/                 # React + TypeScript + Vite frontend
-│   ├── src/
-│   │   ├── components/      # React components
-│   │   ├── context/         # React Context providers
-│   │   ├── services/        # API service layer
-│   │   ├── types/           # TypeScript type definitions
-│   │   └── utils/           # Utility functions
-│   ├── public/              # Static assets
-│   ├── package.json         # Frontend dependencies
-│   ├── vite.config.ts       # Vite configuration
-│   ├── nginx.conf           # Nginx configuration for production
-│   └── README.md            # Frontend-specific documentation
-├── backend/                 # Spring Boot REST API
-│   ├── src/main/java/com/burgerbuilder/
-│   │   ├── controller/      # REST controllers
-│   │   ├── service/         # Business logic services
-│   │   ├── repository/      # Data access layer
-│   │   ├── entity/          # JPA entities
-│   │   ├── dto/             # Data transfer objects
-│   │   ├── exception/       # Custom exception handling
-│   │   └── config/          # Configuration classes
-│   ├── src/main/resources/
-│   │   ├── application.properties          # Default configuration
-│   │   ├── application-docker.properties   # Docker/PostgreSQL config
-│   │   ├── application-azure.properties    # Azure SQL config
-│   │   ├── schema.sql                      # Database schema
-│   │   └── data.sql                        # Initial data
-│   ├── pom.xml              # Maven dependencies and build config
-│   └── TESTING.md           # Backend testing documentation
-├── environment.env.example  # Environment variables template
-└── environment.env          # Environment variables (create from example)
+Internet → Application Gateway (WAF v2) → Frontend VM (Nginx + React)
+                                        → Backend VM (Java Spring Boot)
+                                              ↓
+                                        Azure SQL (Private Endpoint only)
 ```
 
-## Frontend Application
+All resources live inside a private VNet. No VM has a public IP. SQL is only reachable via Private Endpoint. The App Gateway is the single public entry point.
 
-### Tech Stack
+![Architecture Diagram](docs/architecture-diagram.png)
 
-- **Framework**: React 19.1.1
-- **Language**: TypeScript 5.8.3
-- **Build Tool**: Vite 7.1.7
-- **Routing**: React Router DOM 7.9.3
-- **HTTP Client**: Axios 1.12.2
-- **Testing**: Vitest 1.0.4 + Testing Library
-- **Linting**: ESLint 9.36.0
-- **CSS**: Vanilla CSS with CSS modules
+## 🌐 Live URLs
 
-### Key Features
+| Service | URL |
+|---|---|
+| Frontend | http://40.67.225.150 |
+| API Health | http://40.67.225.150/api/health |
+| API Ingredients | http://40.67.225.150/api/ingredients |
 
-- Interactive burger builder with drag-and-drop ingredients
-- Shopping cart management with session persistence
-- Order creation and tracking
-- Order history viewing
-- Responsive design with modern UI/UX
-- Real-time API integration
-- Comprehensive testing coverage
+## 📋 Prerequisites
 
-### Backend URL Configuration
+- Azure CLI (`az login` working)
+- Terraform >= 1.5
+- Ansible >= 2.14
+- Node.js 20+
+- Java 21 + Maven
+- Git + GitHub account
+- Azure subscription with Contributor access
 
-The frontend connects to the backend API through the following configuration:
+## 🗂️ Repository Structure
 
-**Location**: `frontend/src/services/api.ts`
-
-```typescript
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
+```
+devops-project2-ih/
+├── frontend/                        # React + TypeScript + Vite
+├── backend/                         # Spring Boot Java REST API
+├── infra/terraform/
+│   ├── environments/dev/            # Dev environment entry point
+│   │   ├── main.tf                  # Provider, backend, module calls
+│   │   ├── variables.tf             # Variable declarations
+│   │   └── terraform.tfvars         # Variable values (gitignored)
+│   └── modules/
+│       ├── network/                 # VNet, subnets, NSGs
+│       ├── compute/                 # Frontend + backend VMs
+│       ├── database/                # Azure SQL + Private Endpoint
+│       ├── appgateway/              # App Gateway WAF v2
+│       └── monitoring/              # App Insights, Log Analytics, Alerts
+├── config/ansible/
+│   ├── inventories/dev/hosts.yml    # VM inventory
+│   ├── roles/common/                # Base VM setup
+│   ├── roles/frontend/              # Nginx + React deployment
+│   ├── roles/backend/               # Java + Spring Boot deployment
+│   └── site.yml                     # Main playbook
+├── .github/workflows/
+│   ├── infra.yml                    # Terraform pipeline
+│   ├── frontend.yml                 # Frontend CI/CD
+│   └── backend.yml                  # Backend CI/CD
+├── docs/
+│   ├── architecture-diagram.png
+│   └── runbook.md
+└── README.md
 ```
 
-**Required Environment Variable**:
-- `VITE_API_BASE_URL`: The base URL for the backend API (defaults to `http://localhost:8080`)
+## 🔧 How to Provision (Terraform)
 
-**Usage**:
-1. Create a `.env` file in the frontend directory
-2. Add: `VITE_API_BASE_URL=http://your-backend-url:8080`
-3. For production: `VITE_API_BASE_URL=https://your-production-api.com`
-
-### Frontend Compilation and Deployment
-
-#### Development Setup
+### 1. Create Terraform Remote State Storage
 
 ```bash
-cd frontend
-npm install
-npm run dev          # Start development server (http://localhost:5173)
-npm run test         # Run tests
-npm run test:ui      # Run tests with UI
-npm run test:coverage # Run tests with coverage
-npm run lint         # Run ESLint
+az group create --name rg-tfstate --location northeurope
+
+az storage account create \
+  --name tfstatefidail \
+  --resource-group rg-tfstate \
+  --sku Standard_LRS \
+  --location northeurope
+
+az storage container create \
+  --name tfstate \
+  --account-name tfstatefidail \
+  --auth-mode login
 ```
 
-#### Production Build
+### 2. Create SSH Key Pair
 
 ```bash
-cd frontend
-npm run build        # Build for production
-npm run preview      # Preview production build locally
+ssh-keygen -t rsa -b 4096 -f ~/.ssh/burgerbuilder -N ""
 ```
 
-The build process:
-1. **TypeScript Compilation**: `tsc -b` compiles TypeScript to JavaScript
-2. **Vite Build**: Bundles and optimizes assets
-3. **Output**: Creates `dist/` folder with production-ready files
-
-#### Deployment Options
-
-**Option 1: Static Hosting (Recommended)**
-- Build the application: `npm run build`
-- Deploy the `dist/` folder to any static hosting service:
-  - Vercel, Netlify, AWS S3, Azure Static Web Apps
-  - Set `VITE_API_BASE_URL` environment variable in hosting platform
-
-**Option 2: Docker with Nginx**
-- The project includes `nginx.conf` for containerized deployment
-- Nginx serves the built React app with optimizations:
-  - Gzip compression
-  - Static asset caching
-  - Security headers
-  - SPA routing support
-
-**Option 3: Traditional Web Server**
-- Upload built files to any web server (Apache, Nginx, IIS)
-- Configure server to serve `index.html` for all routes (SPA support)
-
-## Backend Application
-
-### Tech Stack
-
-- **Framework**: Spring Boot 3.2.0
-- **Language**: Java 21
-- **Build Tool**: Maven
-- **Database**: 
-  - PostgreSQL (Docker/Development)
-  - Azure SQL Database (Production)
-- **ORM**: Spring Data JPA + Hibernate
-- **Validation**: Spring Boot Validation
-- **Utilities**: Lombok
-- **Testing**: Spring Boot Test + H2 Database
-
-### Key Features
-
-- RESTful API for burger ingredients, cart, and orders
-- Session-based cart management
-- Database initialization with sample data
-- CORS configuration for frontend integration
-- Comprehensive error handling
-- Multi-environment configuration support
-
-### Environment Variables Required
-
-The backend requires the following environment variables (defined in `environment.env`):
-
-#### Database Configuration
-- `DB_HOST`: Database server hostname
-- `DB_PORT`: Database port (1433 for SQL Server, 5432 for PostgreSQL)
-- `DB_NAME`: Database name
-- `DB_USERNAME`: Database username
-- `DB_PASSWORD`: Database password
-- `DB_DRIVER`: JDBC driver class name
-
-#### Application Configuration
-- `SPRING_PROFILES_ACTIVE`: Active Spring profile
-  - `docker`: Uses PostgreSQL configuration
-  - `azure`: Uses Azure SQL configuration
-- `SERVER_PORT`: Server port (default: 8080)
-- `CORS_ALLOWED_ORIGINS`: Comma-separated list of allowed CORS origins
-
-#### Example Configuration
+### 3. Configure Variables
 
 ```bash
-# For Docker/PostgreSQL Development
-SPRING_PROFILES_ACTIVE=docker
-DB_HOST=database
-DB_PORT=5432
-DB_NAME=burgerbuilder
-DB_USERNAME=postgres
-DB_PASSWORD=YourStrong!Passw0rd
-DB_DRIVER=org.postgresql.Driver
-
-# For Azure SQL Production
-SPRING_PROFILES_ACTIVE=azure
-DB_HOST=your-server.database.windows.net
-DB_PORT=1433
-DB_NAME=burgerbuilder
-DB_USERNAME=your-username
-DB_PASSWORD=your-password
-DB_DRIVER=com.microsoft.sqlserver.jdbc.SQLServerDriver
+cp infra/terraform/environments/dev/terraform.tfvars.example \
+   infra/terraform/environments/dev/terraform.tfvars
 ```
 
-### Backend Compilation and Deployment
+Edit `terraform.tfvars` with your values:
 
-#### Development Setup
+```hcl
+resource_group_name = "rg-burgerbuilder-dev"
+location            = "northeurope"
+admin_username      = "azureuser"
+ssh_public_key      = "ssh-rsa AAAA..."
+vm_size             = "Standard_D2ads_v7"
+sql_server_name     = "sql-burgerbuilder-yourname"
+sql_database_name   = "burgerbuilderdb"
+sql_admin_username  = "sqladmin"
+sql_admin_password  = "YourPassword123!"
+alert_email         = "your@email.com"
+```
+
+### 4. Apply Infrastructure
 
 ```bash
-cd backend
-mvn clean install     # Download dependencies and compile
-mvn spring-boot:run   # Start development server
+cd infra/terraform/environments/dev
+terraform init
+terraform plan
+terraform apply
 ```
 
-#### Production Build
+This creates: VNet, 5 subnets, NSGs, 2 VMs, Azure SQL, Private Endpoint, Private DNS, App Gateway (WAF v2), App Insights, Log Analytics, 3 Alert rules.
+
+### 5. Terraform Workspaces
 
 ```bash
-cd backend
-mvn clean package     # Build JAR file
+# Create prod workspace
+terraform workspace new prod
+terraform workspace select prod
+terraform apply -var-file="../../environments/prod/terraform.tfvars"
 ```
 
-The build process:
-1. **Dependency Resolution**: Downloads all Maven dependencies
-2. **Compilation**: Compiles Java source code to bytecode
-3. **Testing**: Runs unit and integration tests
-4. **Packaging**: Creates executable JAR file in `target/` directory
+## ⚙️ How to Configure (Ansible)
 
-#### Deployment Options
+### 1. Update Inventory
 
-**Option 1: JAR File Execution**
+Edit `config/ansible/inventories/dev/hosts.yml` with your VM IPs:
+
+```yaml
+all:
+  children:
+    frontend:
+      hosts:
+        vm-frontend:
+          ansible_host: <frontend-private-ip>
+          ansible_user: azureuser
+          ansible_ssh_private_key_file: ~/.ssh/burgerbuilder
+    backend:
+      hosts:
+        vm-backend:
+          ansible_host: <backend-private-ip>
+          ansible_user: azureuser
+          ansible_ssh_private_key_file: ~/.ssh/burgerbuilder
+```
+
+### 2. Run Playbook
+
 ```bash
-java -jar target/burger-builder-backend-1.0.0.jar
+# Configure all VMs
+ansible-playbook config/ansible/site.yml \
+  -i config/ansible/inventories/dev/hosts.yml \
+  --private-key ~/.ssh/burgerbuilder
+
+# Configure only frontend
+ansible-playbook config/ansible/site.yml \
+  -i config/ansible/inventories/dev/hosts.yml \
+  --limit frontend \
+  --private-key ~/.ssh/burgerbuilder \
+  --extra-vars "frontend_build_path=frontend/dist/"
+
+# Configure only backend
+ansible-playbook config/ansible/site.yml \
+  -i config/ansible/inventories/dev/hosts.yml \
+  --limit backend \
+  --private-key ~/.ssh/burgerbuilder \
+  --extra-vars "backend_jar_path=backend/target/burger-builder-backend-1.0.0.jar"
 ```
 
-**Option 2: Docker Deployment**
+## 🚀 How to Deploy (GitHub Actions)
+
+### 1. Add GitHub Secrets
+
+Go to: **GitHub repo → Settings → Secrets and variables → Actions**
+
+| Secret | Description |
+|---|---|
+| `ARM_CLIENT_ID` | Azure Service Principal Client ID |
+| `ARM_CLIENT_SECRET` | Azure Service Principal Secret |
+| `ARM_TENANT_ID` | Azure Tenant ID |
+| `ARM_SUBSCRIPTION_ID` | Azure Subscription ID |
+| `AZURE_CREDENTIALS` | Full JSON credentials block |
+| `SSH_PRIVATE_KEY` | Contents of `~/.ssh/burgerbuilder` |
+| `SSH_PUBLIC_KEY` | Contents of `~/.ssh/burgerbuilder.pub` |
+| `SQL_ADMIN_PASSWORD` | SQL Server admin password |
+| `APPGW_PUBLIC_IP` | App Gateway public IP address |
+
+### 2. Create Service Principal
+
 ```bash
-# Build Docker image
-docker build -t burger-builder-backend .
-
-# Run with environment variables
-docker run -p 8080:8080 --env-file environment.env burger-builder-backend
+az ad sp create-for-rbac \
+  --name "sp-burgerbuilder-github" \
+  --role contributor \
+  --scopes /subscriptions/<subscription-id>/resourceGroups/<rg-name>
 ```
 
-**Option 3: Cloud Platform Deployment**
-- **Azure App Service**: Deploy JAR file directly
-- **AWS Elastic Beanstalk**: Upload JAR file
-- **Google Cloud Run**: Containerized deployment
-- **Heroku**: Git-based deployment
+### 3. Run Pipelines
 
-#### Environment-Specific Deployment
+**Infrastructure pipeline** (Terraform):
+```
+GitHub → Actions → Infrastructure → Run workflow
+```
 
-**Development (PostgreSQL)**:
-1. Set `SPRING_PROFILES_ACTIVE=docker`
-2. Configure PostgreSQL connection variables
-3. Run with Docker Compose or local PostgreSQL
+**Frontend pipeline** (Build + Deploy):
+```
+GitHub → Actions → Frontend CI/CD → Run workflow
+```
 
-**Production (Azure SQL)**:
-1. Set `SPRING_PROFILES_ACTIVE=azure`
-2. Configure Azure SQL connection variables
-3. Deploy to cloud platform with proper security configuration
+**Backend pipeline** (Build + Deploy):
+```
+GitHub → Actions → Backend CI/CD → Run workflow
+```
 
-## Getting Started
+Pipelines also trigger automatically on push to `main` when files in their respective paths change.
 
-1. **Clone the repository**
-2. **Set up environment variables**:
-   ```bash
-   cp environment.env.example environment.env
-   # Edit environment.env with your database credentials
-   ```
-3. **Start the backend**:
-   ```bash
-   cd backend
-   mvn spring-boot:run
-   ```
-4. **Start the frontend**:
-   ```bash
-   cd frontend
-   npm install
-   npm run dev
-   ```
-5. **Access the application**: http://localhost:5173
+## ✅ How to Validate
 
-## API Endpoints
+### 1. Check App is Live
 
-- `GET /api/ingredients` - Get all ingredients
-- `GET /api/ingredients/{category}` - Get ingredients by category
-- `POST /api/cart/items` - Add item to cart
-- `GET /api/cart/{sessionId}` - Get cart items
-- `DELETE /api/cart/items/{itemId}` - Remove cart item
-- `POST /api/orders` - Create order
-- `GET /api/orders/{orderId}` - Get order details
-- `GET /api/orders/history` - Get order history
+```bash
+# Frontend
+curl http://<appgw-ip>/
 
-## License
+# API Health
+curl http://<appgw-ip>/api/health
 
-This project is part of a capstone project for educational purposes.
+# Ingredients from SQL
+curl http://<appgw-ip>/api/ingredients
+```
+
+### 2. End-to-End SQL Test
+
+```bash
+# Add to cart
+curl -X POST http://<appgw-ip>/api/cart/items \
+  -H "Content-Type: application/json" \
+  -d '{"ingredientId":1,"quantity":1,"sessionId":"test123"}'
+
+# Create order (use cart item ID from above response)
+curl -X POST http://<appgw-ip>/api/orders \
+  -H "Content-Type: application/json" \
+  -d '{"sessionId":"test123","cartItemIds":[1],"totalPrice":1.50,"customerName":"Test User"}'
+
+# Read order back from SQL
+curl http://<appgw-ip>/api/orders/history
+```
+
+### 3. Verify Security
+
+```bash
+# VMs should have NO public IPs
+az vm list-ip-addresses \
+  --resource-group <rg-name> \
+  --query "[].{vm:virtualMachine.name, publicIP:virtualMachine.network.publicIpAddresses[0].ipAddress}" \
+  --output table
+
+# SQL public access should be disabled
+az sql server show \
+  --name <sql-server-name> \
+  --resource-group <rg-name> \
+  --query publicNetworkAccess
+```
+
+### 4. Sample Kusto Queries (Log Analytics)
+
+```kusto
+-- App Gateway requests last 1 hour
+AzureDiagnostics
+| where ResourceType == "APPLICATIONGATEWAYS"
+| where TimeGenerated > ago(1h)
+| summarize count() by httpStatus_d
+
+-- Backend errors
+AppExceptions
+| where TimeGenerated > ago(1h)
+| order by TimeGenerated desc
+```
+
+## 📊 Monitoring
+
+### Alerts Configured
+
+| Alert | Trigger | Severity |
+|---|---|---|
+| App Gateway Backend Health | UnhealthyHostCount > 0 for 5 min | 2 (Warning) |
+| VM CPU High | CPU > 70% for 5 min | 2 (Warning) |
+| SQL DTU High | DTU > 80% for 5 min | 2 (Warning) |
+
+All alerts send email notifications to the configured `alert_email`.
+
+### Application Insights
+
+- Frontend instrumentation via `appi-frontend`
+- Backend instrumentation via `appi-backend`
+- Both connected to shared Log Analytics workspace
+
+## 🔐 Security
+
+- VMs have **no public IPs** — only accessible from App Gateway subnet or ops subnet
+- SQL Server has **public network access disabled** — only reachable via Private Endpoint
+- NSGs restrict inbound traffic per tier
+- SSH locked to ops subnet (snet-ops) only
+- WAF v2 in Detection mode on App Gateway
+- Secrets stored in GitHub Actions secrets, never in code
+
+## 🗺️ 3-Tier Network Layout
+
+| Subnet | CIDR | Purpose |
+|---|---|---|
+| snet-appgw | 10.0.0.0/24 | Application Gateway |
+| snet-frontend | 10.0.1.0/24 | Frontend VM |
+| snet-backend | 10.0.2.0/24 | Backend VM |
+| snet-data | 10.0.3.0/24 | SQL Private Endpoint |
+| snet-ops | 10.0.4.0/24 | Bastion / GitHub Runner |
+
+## 🎬 Demo Script (3-5 min walkthrough)
+
+1. **Show architecture diagram** — explain 3 tiers, private networking, single public entry
+2. **Open browser** at `http://40.67.225.150` — show Burger Builder UI loading
+3. **Show ingredients loading** — prove frontend → App Gateway → backend → SQL flow
+4. **Run curl commands** — create cart item, create order, read order history from SQL
+5. **Show GitHub Actions** — 3 green pipelines (infra, frontend, backend)
+6. **Show Azure Portal** — resource group with all expected services
+7. **Show monitoring** — App Insights, Log Analytics workspace, 3 alert rules
+8. **Show Terraform state** — remote state in Azure Storage
+9. **Show NSGs** — no public access to VMs
+10. **Show SQL** — public network access disabled
+
+## 📦 Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Frontend | React 19, TypeScript, Vite |
+| Backend | Java 21, Spring Boot 3.2, Maven |
+| Database | Azure SQL Database |
+| Infrastructure | Terraform + Azure RM Provider |
+| Configuration | Ansible |
+| CI/CD | GitHub Actions |
+| Networking | Azure VNet, NSGs, Private Endpoints |
+| Gateway | Azure Application Gateway WAF v2 |
+| Monitoring | Azure App Insights + Log Analytics |
+| Secret Storage | GitHub Actions Secrets |
