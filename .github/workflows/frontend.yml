@@ -43,12 +43,21 @@ jobs:
           name: frontend-dist
           path: frontend/dist/
 
+      - name: Setup SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/burgerbuilder
+          chmod 600 ~/.ssh/burgerbuilder
+          ssh-keyscan -H 20.13.160.191 >> ~/.ssh/known_hosts
+
+      - name: Install Ansible
+        run: pip install ansible
+
       - name: Deploy to frontend VM via Ansible
-        uses: dawidd6/action-ansible-playbook@v2
-        with:
-          playbook: config/ansible/site.yml
-          inventory: config/ansible/inventories/dev/hosts.yml
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          options: |
-            --limit frontend
-            --extra-vars "frontend_build_path=frontend/dist/"
+        run: |
+          ansible-playbook config/ansible/site.yml \
+            -i config/ansible/inventories/dev/hosts.yml \
+            --limit frontend \
+            --private-key ~/.ssh/burgerbuilder \
+            --extra-vars "frontend_build_path=frontend/dist/" \
+            -u azureuser
