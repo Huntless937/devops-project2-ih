@@ -35,7 +35,7 @@ jobs:
         working-directory: frontend
         run: npm run build
         env:
-          VITE_API_BASE_URL: http://${{ secrets.APPGW_PUBLIC_IP }}/api
+          VITE_API_BASE_URL: http://${{ secrets.APPGW_PUBLIC_IP }}
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
