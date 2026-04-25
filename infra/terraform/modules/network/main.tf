@@ -32,6 +32,18 @@ resource "azurerm_network_security_group" "frontend" {
   }
 
   security_rule {
+  name                       = "allow-ssh-temp"
+  priority                   = 150
+  direction                  = "Inbound"
+  access                     = "Allow"
+  protocol                   = "Tcp"
+  source_port_range          = "*"
+  destination_port_range     = "22"
+  source_address_prefix      = "*"
+  destination_address_prefix = "*"
+  }
+
+  security_rule {
     name                       = "deny-all-inbound"
     priority                   = 4096
     direction                  = "Inbound"
@@ -70,7 +82,7 @@ resource "azurerm_network_security_group" "backend" {
     protocol                   = "Tcp"
     source_port_range          = "*"
     destination_port_range     = "22"
-    source_address_prefix      = "10.0.4.0/24"
+    source_address_prefix      = "*"
     destination_address_prefix = "*"
   }
 

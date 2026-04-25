@@ -1,3 +1,22 @@
+# Temporary public IPs for deployment
+resource "azurerm_public_ip" "frontend" {
+  name                = "pip-frontend-temp"
+  resource_group_name = var.resource_group_name
+  location            = var.location
+  allocation_method   = "Static"
+  sku                 = "Standard"
+  zones               = ["2"]
+}
+
+resource "azurerm_public_ip" "backend" {
+  name                = "pip-backend-temp"
+  resource_group_name = var.resource_group_name
+  location            = var.location
+  allocation_method   = "Static"
+  sku                 = "Standard"
+  zones               = ["2"]
+}
+
 # Network interfaces — private IPs only, no public IP
 resource "azurerm_network_interface" "frontend" {
   name                = "nic-frontend-group7"
@@ -8,6 +27,7 @@ resource "azurerm_network_interface" "frontend" {
     name                          = "internal"
     subnet_id                     = var.frontend_subnet_id
     private_ip_address_allocation = "Dynamic"
+    public_ip_address_id          = azurerm_public_ip.frontend.id
   }
 }
 
@@ -20,6 +40,7 @@ resource "azurerm_network_interface" "backend" {
     name                          = "internal"
     subnet_id                     = var.backend_subnet_id
     private_ip_address_allocation = "Dynamic"
+    public_ip_address_id          = azurerm_public_ip.backend.id
   }
 }
 

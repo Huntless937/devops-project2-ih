@@ -21,3 +21,11 @@ output "frontend_vm_identity" {
 output "backend_vm_identity" {
   value = azurerm_linux_virtual_machine.backend.identity[0].principal_id
 }
+
+output "frontend_public_ip" {
+  value = azurerm_public_ip.frontend.ip_address
+}
+
+output "backend_public_ip" {
+  value = azurerm_public_ip.backend.ip_address
+}
