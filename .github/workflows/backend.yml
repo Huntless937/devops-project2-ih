@@ -37,12 +37,23 @@ jobs:
           name: backend-jar
           path: backend/target/*.jar
 
+      - name: Setup SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/burgerbuilder
+          chmod 600 ~/.ssh/burgerbuilder
+          ssh-keyscan -H 20.13.155.82 >> ~/.ssh/known_hosts
+          eval $(ssh-agent -s)
+          ssh-add ~/.ssh/burgerbuilder
+
+      - name: Install Ansible
+        run: pip install ansible
+
       - name: Deploy to backend VM via Ansible
-        uses: dawidd6/action-ansible-playbook@v2
-        with:
-          playbook: config/ansible/site.yml
-          inventory: config/ansible/inventories/dev/hosts.yml
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          options: |
-            --limit backend
-            --extra-vars "backend_jar_path=backend/target/burger-builder-backend-1.0.0.jar"
+        run: |
+          ansible-playbook config/ansible/site.yml \
+            -i config/ansible/inventories/dev/hosts.yml \
+            --limit backend \
+            --private-key ~/.ssh/burgerbuilder \
+            --extra-vars "backend_jar_path=${{ github.workspace }}/backend/target/burger-builder-backend-1.0.0.jar" \
+            -u azureuser
