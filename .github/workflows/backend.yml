@@ -55,5 +55,5 @@ jobs:
             -i config/ansible/inventories/dev/hosts.yml \
             --limit backend \
             --private-key ~/.ssh/burgerbuilder \
-            --extra-vars "backend_jar_path=${{ github.workspace }}/backend/target/burger-builder-backend-1.0.0.jar" \
+            --extra-vars "backend_jar_path=${{ github.workspace }}/backend/target/burger-builder-backend-1.0.0.jar db_host=sql-burgerbuilder-group7.database.windows.net db_name=burgerbuilderdbgroup7 db_username=sqladmingroup7 db_password=${{ secrets.SQL_ADMIN_PASSWORD }}" \
             -u azureuser

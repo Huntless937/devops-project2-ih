@@ -29,6 +29,20 @@
     mode: '0644'
   notify: restart burgerbuilder
 
+- name: Create environment file
+  copy:
+    dest: /opt/burgerbuilder/.env
+    owner: azureuser
+    group: azureuser
+    mode: '0600'
+    content: |
+      SPRING_PROFILES_ACTIVE=azure
+      DB_HOST={{ db_host }}
+      DB_PORT=1433
+      DB_NAME={{ db_name }}
+      DB_USERNAME={{ db_username }}
+      DB_PASSWORD={{ db_password }}
+
 - name: Enable and start backend service
   systemd:
     name: burgerbuilder
