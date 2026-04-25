@@ -49,6 +49,8 @@ jobs:
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/burgerbuilder
           chmod 600 ~/.ssh/burgerbuilder
           ssh-keyscan -H 20.13.160.191 >> ~/.ssh/known_hosts
+          eval $(ssh-agent -s)
+          ssh-add ~/.ssh/burgerbuilder
 
       - name: Install Ansible
         run: pip install ansible
