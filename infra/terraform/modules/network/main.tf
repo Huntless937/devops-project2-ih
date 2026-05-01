@@ -109,3 +109,39 @@ resource "azurerm_subnet_network_security_group_association" "backend" {
   subnet_id                 = azurerm_subnet.subnets["backend"].id
   network_security_group_id = azurerm_network_security_group.backend.id
 }
+
+# NSG for ops subnet
+resource "azurerm_network_security_group" "ops" {
+  name                = "nsg-ops-group7"
+  location            = var.location
+  resource_group_name = var.resource_group_name
+
+  security_rule {
+    name                       = "allow-ssh"
+    priority                   = 100
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "22"
+    source_address_prefix      = "*"
+    destination_address_prefix = "*"
+  }
+
+  security_rule {
+    name                       = "allow-sonarqube"
+    priority                   = 200
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "9000"
+    source_address_prefix      = "*"
+    destination_address_prefix = "*"
+  }
+}
+
+resource "azurerm_subnet_network_security_group_association" "ops" {
+  subnet_id                 = azurerm_subnet.subnets["ops"].id
+  network_security_group_id = azurerm_network_security_group.ops.id
+}

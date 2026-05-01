@@ -29,3 +29,11 @@ output "frontend_public_ip" {
 output "backend_public_ip" {
   value = azurerm_public_ip.backend.ip_address
 }
+
+output "sonarqube_public_ip" {
+  value = azurerm_public_ip.sonarqube.ip_address
+}
+
+output "sonarqube_vm_id" {
+  value = azurerm_linux_virtual_machine.sonarqube.id
+}

@@ -43,6 +43,7 @@ module "compute" {
   location            = azurerm_resource_group.main.location
   frontend_subnet_id  = module.network.subnet_ids["frontend"]
   backend_subnet_id   = module.network.subnet_ids["backend"]
+  ops_subnet_id       = module.network.subnet_ids["ops"]
   admin_username      = var.admin_username
   ssh_public_key      = var.ssh_public_key
   vm_size             = var.vm_size
