@@ -15,12 +15,17 @@ jobs:
     name: Terraform Plan & Apply
     runs-on: ubuntu-latest
 
+    outputs:
+      sonarqube_ip: ${{ steps.get_ip.outputs.sonarqube_ip }}
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: false
 
       - name: Terraform Init
         working-directory: ${{ env.TF_WORKING_DIR }}
@@ -52,3 +57,47 @@ jobs:
           ARM_SUBSCRIPTION_ID: ${{ secrets.ARM_SUBSCRIPTION_ID }}
           TF_VAR_sql_admin_password: ${{ secrets.SQL_ADMIN_PASSWORD }}
           TF_VAR_ssh_public_key:     ${{ secrets.SSH_PUBLIC_KEY }}
+
+      - name: Get SonarQube Public IP
+        id: get_ip
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: |
+          SONAR_IP=$(terraform output -raw sonarqube_public_ip)
+          echo "sonarqube_ip=$SONAR_IP" >> $GITHUB_OUTPUT
+        env:
+          ARM_CLIENT_ID:       ${{ secrets.ARM_CLIENT_ID }}
+          ARM_CLIENT_SECRET:   ${{ secrets.ARM_CLIENT_SECRET }}
+          ARM_TENANT_ID:       ${{ secrets.ARM_TENANT_ID }}
+          ARM_SUBSCRIPTION_ID: ${{ secrets.ARM_SUBSCRIPTION_ID }}
+
+  ansible:
+    name: Configure SonarQube
+    runs-on: ubuntu-latest
+    needs: terraform
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Ansible
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ansible
+
+      - name: Install Ansible Docker collection
+        run: ansible-galaxy collection install community.docker
+
+      - name: Setup SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ needs.terraform.outputs.sonarqube_ip }} >> ~/.ssh/known_hosts
+
+      - name: Run SonarQube playbook
+        run: |
+          ansible-playbook \
+            -i "${{ needs.terraform.outputs.sonarqube_ip }}," \
+            -u azureuser \
+            --private-key ~/.ssh/id_rsa \
+            config/ansible/playbooks/sonarqube.yml
