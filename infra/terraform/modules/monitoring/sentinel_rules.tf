@@ -43,50 +43,7 @@ resource "azurerm_sentinel_alert_rule_scheduled" "ssh_brute_force" {
   depends_on = [azurerm_sentinel_log_analytics_workspace_onboarding.sentinel]
 }
 
-# Rule 2 — WAF SQL Injection Detection
-resource "azurerm_sentinel_alert_rule_scheduled" "waf_sql_injection" {
-  name                       = "WAF-SQL-Injection-Detection"
-  log_analytics_workspace_id = azurerm_log_analytics_workspace.main.id
-  display_name               = "WAF Blocked SQL Injection Attempt"
-  description                = "Triggers when App Gateway WAF blocks requests matching SQL injection rules"
-  severity                   = "High"
-  enabled                    = true
-  query_frequency            = "PT5M"
-  query_period               = "PT15M"
-  trigger_operator           = "GreaterThan"
-  trigger_threshold          = 0
 
-  query = <<-QUERY
-    AzureDiagnostics
-    | where ResourceType == "APPLICATIONGATEWAYS"
-    | where Category == "ApplicationGatewayFirewallLog"
-    | where isnotempty(clientIp_s)
-    | where Message contains "SQL" or Message contains "injection"
-    | project TimeGenerated, clientIp_s, requestUri_s, Message
-    | summarize BlockedRequests = count() by clientIp_s, requestUri_s, bin(TimeGenerated, 5m)
-  QUERY
-
-  incident_configuration {
-    create_incident = true
-    grouping {
-      enabled                = true
-      lookback_duration      = "PT1H"
-      reopen_closed_incidents = false
-      entity_matching_method = "Selected"
-      group_by_entities      = ["IP"]
-    }
-  }
-
-  entity_mapping {
-    entity_type = "IP"
-    field_mapping {
-      identifier  = "Address"
-      column_name = "clientIp_s"
-    }
-  }
-
-  depends_on = [azurerm_sentinel_log_analytics_workspace_onboarding.sentinel]
-}
 
 # Rule 3 — Mass Resource Deletion
 resource "azurerm_sentinel_alert_rule_scheduled" "mass_resource_deletion" {
