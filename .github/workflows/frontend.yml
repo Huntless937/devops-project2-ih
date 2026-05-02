@@ -8,8 +8,8 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-and-deploy:
-    name: Build and Deploy Frontend
+  build:
+    name: Build and Test Frontend
     runs-on: ubuntu-latest
 
     steps:
@@ -31,6 +31,14 @@ jobs:
         working-directory: frontend
         run: npm run test -- --run
 
+      - name: SonarQube Scan
+        uses: sonarsource/sonarqube-scan-action@master
+        with:
+          projectBaseDir: frontend
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN_FRONTEND }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+
       - name: Build frontend
         working-directory: frontend
         run: npm run build
@@ -43,14 +51,43 @@ jobs:
           name: frontend-dist
           path: frontend/dist/
 
+  deploy:
+    name: Deploy Frontend
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist/
+
       - name: Setup SSH key
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/burgerbuilder
           chmod 600 ~/.ssh/burgerbuilder
-          ssh-keyscan -H 20.13.160.191 >> ~/.ssh/known_hosts
-          eval $(ssh-agent -s)
-          ssh-add ~/.ssh/burgerbuilder
+          ssh-keyscan -H ${{ secrets.SONAR_PUBLIC_IP }} >> ~/.ssh/known_hosts
+
+      - name: Configure SSH ProxyJump
+        run: |
+          cat >> ~/.ssh/config << EOF
+          Host sonarqube
+            HostName ${{ secrets.SONAR_PUBLIC_IP }}
+            User azureuser
+            IdentityFile ~/.ssh/burgerbuilder
+            StrictHostKeyChecking no
+
+          Host 10.0.*
+            User azureuser
+            ProxyJump sonarqube
+            IdentityFile ~/.ssh/burgerbuilder
+            StrictHostKeyChecking no
+          EOF
 
       - name: Install Ansible
         run: pip install ansible
