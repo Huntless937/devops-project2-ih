@@ -63,7 +63,7 @@ resource "azurerm_linux_virtual_machine" "backend" {
   size                  = var.vm_size
   admin_username        = var.admin_username
   network_interface_ids = [azurerm_network_interface.backend.id]
-  zone                  = "2" 
+  zone                  = "2"
 
   admin_ssh_key {
     username   = var.admin_username
@@ -76,11 +76,11 @@ resource "azurerm_linux_virtual_machine" "backend" {
   }
 
   source_image_reference {
-  publisher = "Canonical"
-  offer     = "0001-com-ubuntu-server-jammy"
-  sku       = "22_04-lts-gen2"
-  version   = "latest"
-}
+    publisher = "Canonical"
+    offer     = "0001-com-ubuntu-server-jammy"
+    sku       = "22_04-lts-gen2"
+    version   = "latest"
+  }
 
   identity {
     type = "SystemAssigned"
