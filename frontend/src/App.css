@@ -1,9 +1,9 @@
-* {
-  box-sizing: border-box;
-}
+* { box-sizing: border-box; }
 
 #root {
   width: 100%;
   margin: 0 auto;
   text-align: left;
+  background: var(--dark-bg);
+  min-height: 100vh;
 }
