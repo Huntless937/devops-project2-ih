@@ -60,7 +60,7 @@ resource "azurerm_sentinel_alert_rule_scheduled" "waf_sql_injection" {
     AzureDiagnostics
     | where ResourceType == "APPLICATIONGATEWAYS"
     | where Category == "ApplicationGatewayFirewallLog"
-    | where action_s == "Blocked"
+    | where action_s == "Blocked" or isnotempty(action_s)
     | where Message contains "SQL" or ruleId_s startswith "942"
     | project TimeGenerated, clientIp_s, requestUri_s, ruleId_s, Message
     | summarize BlockedRequests = count() by clientIp_s, requestUri_s, bin(TimeGenerated, 5m)
