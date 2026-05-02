@@ -43,3 +43,12 @@ variable "sql_admin_password" {
 variable "alert_email" {
   type = string
 }
+
+variable "ssl_cert_data" {      
+  type = string
+  sensitive = true
+}
+variable "ssl_cert_password" {
+  type      = string
+  sensitive = true
+}

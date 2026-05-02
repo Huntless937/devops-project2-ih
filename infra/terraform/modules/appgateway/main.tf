@@ -64,7 +64,19 @@ resource "azurerm_application_gateway" "main" {
     name = "port-80"
     port = 80
   }
+  
+  # Frontend port 443
+  frontend_port {
+    name = "port-443"
+    port = 443
+  }
 
+  ssl_certificate {
+    name     = "burgerbuilder-ssl-cert"
+    key_vault_secret_id = null
+    data     = var.ssl_cert_data
+    password = var.ssl_cert_password
+  }
   # ─── FRONTEND BACKEND ───────────────────────────────────────
   backend_address_pool {
     name  = "pool-frontend"
@@ -123,6 +135,13 @@ resource "azurerm_application_gateway" "main" {
     protocol                       = "Http"
   }
 
+  http_listener {
+    name                           = "listener-https"
+    frontend_ip_configuration_name = "appgw-frontend-ip"
+    frontend_port_name             = "port-443"
+    protocol                       = "Https"
+    ssl_certificate_name           = "burgerbuilder-ssl-cert"
+  }
   # ─── ROUTING RULES ──────────────────────────────────────────
   # Rule 1: /api/* → backend
   url_path_map {
@@ -146,6 +165,15 @@ resource "azurerm_application_gateway" "main" {
     url_path_map_name  = "url-path-map"
     priority           = 100
   }
+
+  request_routing_rule {
+    name               = "routing-rule-https"
+    rule_type          = "PathBasedRouting"
+    http_listener_name = "listener-https"
+    url_path_map_name  = "url-path-map"
+    priority           = 90
+  }
+
   rewrite_rule_set {
     name = "rewrite-api-path"
 

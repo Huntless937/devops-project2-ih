@@ -68,6 +68,8 @@ module "appgateway" {
   appgw_subnet_id     = module.network.subnet_ids["appgw"]
   frontend_private_ip = module.compute.frontend_private_ip
   backend_private_ip  = module.compute.backend_private_ip
+  ssl_cert_data       = var.ssl_cert_data
+  ssl_cert_password   = var.ssl_cert_password
 }
 
 module "monitoring" {
