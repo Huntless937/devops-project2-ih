@@ -3,8 +3,6 @@
   border: 1px solid var(--dark-border);
   border-radius: 12px;
   padding: 1.25rem;
-  position: sticky;
-  top: 80px;
 }
 
 .preview-title {
