@@ -43,7 +43,41 @@ resource "azurerm_sentinel_alert_rule_scheduled" "ssh_brute_force" {
   depends_on = [azurerm_sentinel_log_analytics_workspace_onboarding.sentinel]
 }
 
+# Rule 2 (fixed) — WAF Attack Detection
+resource "azurerm_sentinel_alert_rule_scheduled" "waf_attacks" {
+  name                       = "WAF-Attack-Detection"
+  log_analytics_workspace_id = azurerm_log_analytics_workspace.main.id
+  display_name               = "WAF Blocked Attack Attempt"
+  description                = "Triggers when App Gateway WAF blocks malicious requests"
+  severity                   = "High"
+  enabled                    = true
+  query_frequency            = "PT5M"
+  query_period               = "PT15M"
+  trigger_operator           = "GreaterThan"
+  trigger_threshold          = 0
 
+  query = <<-QUERY
+    AzureDiagnostics
+    | where ResourceType == "APPLICATIONGATEWAYS"
+    | where Category == "ApplicationGatewayFirewallLog"
+    | where OperationName == "ApplicationGatewayFirewall"
+    | summarize AttackCount = count() by requestUri_s, instanceId_s, bin(TimeGenerated, 5m)
+    | where AttackCount > 0
+  QUERY
+
+  incident_configuration {
+    create_incident = true
+    grouping {
+      enabled                = true
+      lookback_duration      = "PT1H"
+      reopen_closed_incidents = false
+      entity_matching_method = "Selected"
+      group_by_entities      = []
+    }
+  }
+
+  depends_on = [azurerm_sentinel_log_analytics_workspace_onboarding.sentinel]
+}
 
 # Rule 3 — Mass Resource Deletion
 resource "azurerm_sentinel_alert_rule_scheduled" "mass_resource_deletion" {
