@@ -71,7 +71,7 @@ resource "azurerm_sentinel_alert_rule_scheduled" "waf_attacks" {
       enabled                = true
       lookback_duration      = "PT1H"
       reopen_closed_incidents = false
-      entity_matching_method = "Selected"
+      entity_matching_method = "AllEntities"
       group_by_entities      = []
     }
   }
