@@ -27,3 +27,4 @@ yarn-error.log*
 **/**/*.tfstate
 **/**/target/
 
+config/telegram_secrets.py
