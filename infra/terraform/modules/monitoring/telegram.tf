@@ -59,9 +59,3 @@ resource "azurerm_logic_app_action_http" "send_telegram" {
 
   depends_on = [azurerm_logic_app_trigger_http_request.sentinel_trigger]
 }
-
-# Output the Logic App trigger URL so we can connect it to Sentinel
-output "logic_app_trigger_url" {
-  value     = azurerm_logic_app_trigger_http_request.sentinel_trigger.callback_url
-  sensitive = true
-}
