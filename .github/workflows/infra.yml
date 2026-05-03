@@ -48,6 +48,8 @@ jobs:
           TF_VAR_ssh_public_key:     ${{ secrets.SSH_PUBLIC_KEY }}
           TF_VAR_ssl_cert_data:     ${{ secrets.SSL_CERT_DATA }}
           TF_VAR_ssl_cert_password: ${{ secrets.SSL_CERT_PASSWORD }}
+          TF_VAR_telegram_bot_token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TF_VAR_telegram_chat_id:   ${{ secrets.TELEGRAM_CHAT_ID }}
 
       - name: Terraform Apply
         working-directory: ${{ env.TF_WORKING_DIR }}
@@ -61,6 +63,8 @@ jobs:
           TF_VAR_ssh_public_key:     ${{ secrets.SSH_PUBLIC_KEY }}
           TF_VAR_ssl_cert_data:     ${{ secrets.SSL_CERT_DATA }}
           TF_VAR_ssl_cert_password: ${{ secrets.SSL_CERT_PASSWORD }}
+          TF_VAR_telegram_bot_token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TF_VAR_telegram_chat_id:   ${{ secrets.TELEGRAM_CHAT_ID }}
 
       - name: Get SonarQube Public IP
         id: get_ip

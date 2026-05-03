@@ -11,3 +11,8 @@ output "backend_instrumentation_key" {
 output "log_analytics_workspace_id" {
   value = azurerm_log_analytics_workspace.main.id
 }
+
+output "logic_app_trigger_url" {
+  value     = azurerm_logic_app_trigger_http_request.sentinel_trigger.callback_url
+  sensitive = true
+}

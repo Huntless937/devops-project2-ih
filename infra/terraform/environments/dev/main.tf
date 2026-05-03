@@ -81,4 +81,6 @@ module "monitoring" {
   frontend_vm_id      = module.compute.frontend_vm_id
   backend_vm_id       = module.compute.backend_vm_id
   sql_database_id     = module.database.sql_database_id
+  telegram_bot_token  = var.telegram_bot_token
+  telegram_chat_id    = var.telegram_chat_id
 }
