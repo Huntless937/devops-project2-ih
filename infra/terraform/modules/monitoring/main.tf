@@ -107,3 +107,19 @@ resource "azurerm_monitor_metric_alert" "sql_dtu" {
     action_group_id = azurerm_monitor_action_group.main.id
   }
 }
+
+# App Gateway Diagnostic Settings
+resource "azurerm_monitor_diagnostic_setting" "appgw" {
+  name                       = "appgw-diag"
+  target_resource_id         = var.appgw_id
+  log_analytics_workspace_id = azurerm_log_analytics_workspace.main.id
+
+  enabled_log {
+    category_group = "allLogs"
+  }
+
+  metric {
+    category = "AllMetrics"
+    enabled  = true
+  }
+}
